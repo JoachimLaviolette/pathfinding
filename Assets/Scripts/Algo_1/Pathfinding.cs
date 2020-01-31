@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,46 +13,57 @@ using UnityEngine;
 
 namespace Algo_1
 {
-    public class Pathfinding
+    public class Pathfinding : MonoBehaviour
     {
         private Grid grid;
-
-        private static float CELL_SIZE = 10f;
-        private static float BORDER_SIZE = 1f;
-        private static Vector3 ORIGIN_POSITION = Vector3.zero;
+        private PathRequestManager pathRequestManager;
+        private Vector3[] waypoints = new Vector3[0];
+        private bool isPathFindingSuccessful = false;
 
         private const int STRAIGHT_COST = 10; // 1 * 10
-        private const int DIAGONAL_COST = 14; // 1.4 * 10
+        private const int DIAGONAL_COST = 14; // sqrt(2) * 10
 
-        /**
-         * Create a new pathfinding
-         */
-        public Pathfinding(int width, int height)
+        private void Awake()
         {
-            // this.grid = new Grid(width, height, CELL_SIZE, BORDER_SIZE, ORIGIN_POSITION, (int x, int y, Grid grid) => new PathNode(x, y, grid));
+            this.grid = this.GetComponent<Grid>();
+            this.pathRequestManager = this.GetComponent<PathRequestManager>();
         }
 
         /**
-         * Return the associate grid
+         * Start the FindPath coroutine with the given positions
          */
-        public Grid GetGrid()
+        public void StartFindPath(Vector3 pathStart, Vector3 pathEnd)
         {
-            return this.grid;
+            this.StartCoroutine(FindPath(pathStart, pathEnd));
         }
 
         /**
          * Try to find a path to the end node
          */
-        public List<PathNode> FindPath(int startX, int startY, int endX, int endY)
+        IEnumerator FindPath(Vector3 pathStart, Vector3 pathEnd)
         {
-            PathNode startNode = this.grid.GetNode(startX, startY);
-            PathNode endNode = this.grid.GetNode(endX, endY);
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
 
+            this.GetNodes(pathStart, pathEnd, out PathNode startNode, out PathNode endNode);
             this.InitializeNodes();
             this.InitializeStartNode(startNode, endNode);
 
-            return this.SearchPath(startNode, endNode);
-            // return this.SearchPathBinaryHeaps(startNode, endNode);
+            this.SearchPath(startNode, endNode, sw);
+            // this.SearchPathBinaryHeaps(startNode, endNode, sw);
+
+            yield return null;
+
+
+        }
+
+        /**
+         * Get the start and end nodes at the given positions
+         */
+        private void GetNodes(Vector3 pathStart, Vector3 pathEnd, out PathNode startNode, out PathNode endNode)
+        {
+            startNode = this.grid.GetNode(pathStart);
+            endNode = this.grid.GetNode(pathEnd);
         }
 
         /**
@@ -84,21 +96,30 @@ namespace Algo_1
         /**
          * Classic A* algorithm to search a path
          */
-        private List<PathNode> SearchPath(PathNode startNode, PathNode endNode)
+        private void SearchPath(PathNode startNode, PathNode endNode, Stopwatch sw)
         {
+            if (!startNode.IsWalkable() || !endNode.IsWalkable()) return;
+
             List<PathNode> openList = new List<PathNode> { startNode }; // Nodes queued up for searching
-            List<PathNode> closedList = new List<PathNode>(); // Nodes already searched
+            HashSet<PathNode> closedList = new HashSet<PathNode>(); // Nodes already searched
 
             while (openList.Count > 0)
             {
                 PathNode currentNode = this.GetLowestFCostNode(openList);
 
-                if (currentNode == endNode) return this.ComputePath(endNode);
+                if (currentNode == endNode)
+                {
+                    this.isPathFindingSuccessful = true;
+                    sw.Stop();
+                    UnityEngine.Debug.Log("Path found after: " + sw.ElapsedMilliseconds + " ms.");
+                    
+                    break;
+                }
 
                 openList.Remove(currentNode);
                 closedList.Add(currentNode);
 
-                foreach (PathNode neighborNode in this.GetNeighbors(currentNode))
+                foreach (PathNode neighborNode in this.grid.GetNeighbors(currentNode))
                 {
                     if (closedList.Contains(neighborNode)) continue;
                     if (!neighborNode.IsWalkable())
@@ -121,14 +142,20 @@ namespace Algo_1
                 }
             }
 
-            // Out of nodes on the open list, no path found
-            return null;
+            if (!this.isPathFindingSuccessful)
+            {
+                // Out of nodes on the open list, no path found
+                return;
+            }
+
+            this.ComputePath(endNode);
+            this.pathRequestManager.FinishedProcessingPath(this.waypoints, this.isPathFindingSuccessful);
         }
 
         /**
          * A* algorithm using binary heaps
          */
-        private List<PathNode> SearchPathBinaryHeaps(PathNode startNode, PathNode endNode)
+        private List<PathNode> SearchPathBinaryHeaps(PathNode startNode, PathNode endNode, Stopwatch sw)
         {
             List<PathNode> nodeBinaryHeap = new List<PathNode> { null };
 
@@ -161,59 +188,46 @@ namespace Algo_1
         }
 
         /**
-         * Compute path from the given node
+         * Compute path from the given end node parent to parent
          */
-        private List<PathNode> ComputePath(PathNode endNode)
+        private void ComputePath(PathNode endNode)
         {
             List<PathNode> path = new List<PathNode>();
-            path.Add(endNode);
-
             PathNode currentNode = endNode;
 
-            while (currentNode.GetParent() != null)
+            while (currentNode != null)
             {
-                path.Add(currentNode.GetParent());
+                path.Add(currentNode);
                 currentNode = currentNode.GetParent();
             }
 
-            path.Reverse();
-
-            return path;
+            this.waypoints = this.SimplifyPath(path);
         }
 
         /**
-         * Get the neighbors nodes of the given node
+         * Simpligy the given path to only display direction changes
          */
-        private List<PathNode> GetNeighbors(PathNode node)
+        private Vector3[] SimplifyPath(List<PathNode> path)
         {
-            List<PathNode> neighbors = new List<PathNode>();
+            List<Vector3> waypoints = new List<Vector3>();
+            Vector2 oldDir = Vector2.zero;
 
-            if (node.GetX() - 1 >= 0)
+            for (int x = 1; x < path.Count; ++x)
             {
-                // Left
-                neighbors.Add(this.grid.GetNode(node.GetX() - 1, node.GetY()));
-                // Left Down
-                if (node.GetY() - 1 >= 0) neighbors.Add(this.grid.GetNode(node.GetX() - 1, node.GetY() - 1));
-                // Left Up
-                if (node.GetY() + 1 < this.grid.GetHeight()) neighbors.Add(this.grid.GetNode(node.GetX() - 1, node.GetY() + 1));
-            }
-            
-            if (node.GetX() + 1 < this.grid.GetWidth())
-            {
-                // Right
-                neighbors.Add(this.grid.GetNode(node.GetX() + 1, node.GetY()));
-                // Right Down
-                if (node.GetY() - 1 >= 0) neighbors.Add(this.grid.GetNode(node.GetX() + 1, node.GetY() - 1));
-                // Right Up
-                if (node.GetY() + 1 < this.grid.GetHeight()) neighbors.Add(this.grid.GetNode(node.GetX() + 1, node.GetY() + 1));
+                Vector2 newDir = new Vector2(
+                    path[x - 1].GetX() - path[x].GetX(), 
+                    path[x - 1].GetY() - path[x].GetY()
+                );
+
+                if (newDir != oldDir) waypoints.Add(path[x].GetWorldPosition());
+
+                oldDir = newDir;
             }
 
-            // Down
-            if (node.GetY() - 1 >= 0) neighbors.Add(this.grid.GetNode(node.GetX(), node.GetY() - 1));
-            // Up
-            if (node.GetY() + 1 < this.grid.GetHeight()) neighbors.Add(this.grid.GetNode(node.GetX(), node.GetY() + 1));
+            waypoints.Reverse();
+            waypoints.Add(path[0].GetWorldPosition());
 
-            return neighbors;
+            return waypoints.ToArray();
         }
     }
 }

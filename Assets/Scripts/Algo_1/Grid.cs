@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 using System;
-using JoaDev.Utils;
+
 
 /**
  * ------------------------------------------------
@@ -13,6 +14,7 @@ namespace Algo_1
 {
     public class Grid : MonoBehaviour
     {
+        public bool displayGridGizmos;
         public LayerMask unwalkableMask;
         public Vector2 gridWorldSize;
         public float nodeRadius;
@@ -21,7 +23,7 @@ namespace Algo_1
         private float nodeDiameter;
         private PathNode[,] nodes;
 
-        private void Start()
+        private void Awake()
         {
             this.nodeDiameter = this.nodeRadius * 2;
             this.width = Mathf.RoundToInt(this.gridWorldSize.x / this.nodeDiameter);
@@ -34,7 +36,7 @@ namespace Algo_1
         {
             Gizmos.DrawWireCube(this.transform.position, new Vector3(this.gridWorldSize.x, 1, this.gridWorldSize.y));
 
-            if (this.nodes != null)
+            if (this.nodes != null && this.displayGridGizmos)
             {
                 foreach (PathNode node in this.nodes)
                 {
@@ -44,6 +46,9 @@ namespace Algo_1
             }
         }
 
+        /**
+         * Instantiate the nodes
+         */
         private void InstantiateNodes()
         {
             this.nodes = new PathNode[this.width, this.height];
@@ -59,26 +64,72 @@ namespace Algo_1
                         worldBottomLeftPos + Vector3.right * (x * this.nodeDiameter + this.nodeRadius)
                         + Vector3.forward * (y * this.nodeDiameter + nodeRadius);
                     bool isWalkable = !(Physics.CheckSphere(worldPosition, this.nodeRadius, this.unwalkableMask));
-                    this.nodes[x, y] = new PathNode(worldPosition, this, isWalkable);
+                    this.nodes[x, y] = new PathNode(worldPosition, x, y, this, isWalkable);
                 }
             }
         }
 
-        public PathNode GetNodeFromWorldPosition(Vector3 worldPosition)
+        /**
+         * Return the node at the specified world position
+         */
+        public PathNode GetNode(Vector3 worldPosition)
         {
-            float percentX = Mathf.Clamp01((worldPosition.x + this.gridWorldSize.x / 2) / this.gridWorldSize.x);
-            float percentY = Mathf.Clamp01((worldPosition.z + this.gridWorldSize.y / 2) / this.gridWorldSize.y);
-
-            int x = Mathf.RoundToInt((this.gridWorldSize.x - 1) * percentX);
-            int y = Mathf.RoundToInt((this.gridWorldSize.y - 1) * percentY);
+            this.GetXY(worldPosition, out int x, out int y);
 
             return this.nodes[x, y];
         }
 
         /**
+         * Get the x and y from the given world position
+         */
+        public void GetXY(Vector3 worldPosition, out int x, out int y)
+        {
+            float percentX = Mathf.Clamp01((worldPosition.x + this.gridWorldSize.x / 2) / this.gridWorldSize.x);
+            float percentY = Mathf.Clamp01((worldPosition.z + this.gridWorldSize.y / 2) / this.gridWorldSize.y);
+
+            x = Mathf.RoundToInt((this.gridWorldSize.x - 1) * percentX);
+            y = Mathf.RoundToInt((this.gridWorldSize.y - 1) * percentY);
+        }
+
+        /**
+         * Return the node at the specified indices
+         */
+        public PathNode GetNode(int x, int y)
+        {
+            return this.nodes[x, y];
+        }
+
+        /**
+         * Get the neighbors nodes of the given node
+         */
+        public List<PathNode> GetNeighbors(PathNode node)
+        {
+            List<PathNode> neighbors = new List<PathNode>();
+
+            for (int x = -1; x <= 1; ++x)
+            {
+                for (int y = -1; y <= 1; ++y)
+                {
+                    if (x == 0 && y == 0) continue;
+
+                    int checkX = node.GetX() + x;
+                    int checkY = node.GetY() + y;
+
+                    if (checkX >= 0 && checkX < this.width
+                        && checkY >= 0 && checkY < height)
+                    {
+                        neighbors.Add(this.nodes[checkX, checkY]);
+                    }
+                }
+            }
+
+            return neighbors;
+        }
+
+        /**
          * Return grid's width
          */
-        public int GetWidth() 
+        public int GetWidth()
         {
             return this.width;
         }
@@ -89,14 +140,6 @@ namespace Algo_1
         public int GetHeight()
         {
             return this.height;
-        }
-
-        /**
-         * Return the node at the specified indices
-         */
-        public PathNode GetNode(int x, int y)
-        {
-            return this.nodes[x, y];
         }
     }
 }

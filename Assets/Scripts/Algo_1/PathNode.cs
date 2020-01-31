@@ -26,25 +26,13 @@ namespace Algo_1
         private Grid grid;
         private bool isWalkable;
 
-        public PathNode(Vector3 worldPosition, Grid grid, bool isWalkable = true)
+        public PathNode(Vector3 worldPosition, int x, int y, Grid grid, bool isWalkable = true)
         {
             this.worldPosition = worldPosition;
+            this.x = x;
+            this.y = y;
             this.grid = grid;
             this.isWalkable = isWalkable;
-        }
-
-        /**
-         * Compute world position based on x and y indices
-         */
-        private void ComputeWorldPosition()
-        {
-            this.worldPosition = new Vector3(this.x, this.y) * this.grid.nodeRadius;
-        }
-
-        public override string ToString()
-        {
-            // return this.G + "\n" + this.H + "\n" + this.F;
-            return x + "," + y;
         }
 
         /**
@@ -141,6 +129,11 @@ namespace Algo_1
         public bool IsWalkable()
         {
             return this.isWalkable;
+        }
+
+        public override string ToString()
+        {
+            return "(" + this.x + "," + this.y + ")";
         }
     }
 }

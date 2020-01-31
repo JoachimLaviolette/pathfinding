@@ -24,6 +24,7 @@ namespace Algo_1
         private void Awake()
         {
             instance = this;
+            this.pathfinding = this.GetComponent<Pathfinding>();
         }
 
         struct PathRequest
@@ -52,7 +53,7 @@ namespace Algo_1
             {
                 this.currentPathRequest = this.pathRequestQueue.Dequeue();
                 this.isProcessingPath = true;
-                //this.pathfinding.StartFindPath(this.currentPathRequest.pathStart, this.currentPathRequest.pathEnd);
+                this.pathfinding.StartFindPath(this.currentPathRequest.pathStart, this.currentPathRequest.pathEnd);
             }
         }
 

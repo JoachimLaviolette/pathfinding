@@ -63,17 +63,16 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Light.cs" />
     <Compile Include="Assets\Scripts\Algo_0\Grid.cs" />
     <Compile Include="Assets\Scripts\Algo_0\IDrawable.cs" />
     <Compile Include="Assets\Scripts\Algo_0\PathNode.cs" />
     <Compile Include="Assets\Scripts\Algo_0\Pathfinding.cs" />
     <Compile Include="Assets\Scripts\Algo_0\Testing.cs" />
     <Compile Include="Assets\Scripts\Algo_1\Grid.cs" />
-    <Compile Include="Assets\Scripts\Algo_1\IDrawable.cs" />
     <Compile Include="Assets\Scripts\Algo_1\PathNode.cs" />
     <Compile Include="Assets\Scripts\Algo_1\PathRequestManager.cs" />
     <Compile Include="Assets\Scripts\Algo_1\Pathfinding.cs" />
+    <Compile Include="Assets\Scripts\Algo_1\Unit.cs" />
     <Compile Include="Assets\Scripts\Utils.cs" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>C:/Users/joach/Documents/projets/pathfinding/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
