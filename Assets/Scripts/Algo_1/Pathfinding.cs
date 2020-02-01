@@ -15,6 +15,8 @@ namespace Algo_1
 {
     public class Pathfinding : MonoBehaviour
     {
+        public bool simplifyPath;
+
         private Grid grid;
         private PathRequestManager pathRequestManager;
         private Vector3[] waypoints = new Vector3[0];
@@ -53,8 +55,6 @@ namespace Algo_1
             // this.SearchPathBinaryHeaps(startNode, endNode, sw);
 
             yield return null;
-
-
         }
 
         /**
@@ -145,6 +145,9 @@ namespace Algo_1
             if (!this.isPathFindingSuccessful)
             {
                 // Out of nodes on the open list, no path found
+                sw.Stop();
+                UnityEngine.Debug.Log("No path found after: " + sw.ElapsedMilliseconds + " ms.");
+
                 return;
             }
 
@@ -214,6 +217,12 @@ namespace Algo_1
 
             for (int x = 1; x < path.Count; ++x)
             {
+                if (!this.simplifyPath)
+                {
+                    waypoints.Add(path[x].GetWorldPosition());
+                    continue;
+                }
+
                 Vector2 newDir = new Vector2(
                     path[x - 1].GetX() - path[x].GetX(), 
                     path[x - 1].GetY() - path[x].GetY()

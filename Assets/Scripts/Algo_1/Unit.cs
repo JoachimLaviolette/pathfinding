@@ -27,8 +27,8 @@ namespace Algo_1
             {
                 for (int x = this.targetIndex; x < this.path.Length; ++x) 
                 {
-                    Gizmos.color = Color.black;
-                    Gizmos.DrawCube(this.path[x], new Vector3(.3f, .3f, .3f));
+                    Gizmos.color = Color.cyan;
+                    Gizmos.DrawCube(this.path[x], new Vector3(.2f, .2f, .2f));
 
                     if (x == this.targetIndex) Gizmos.DrawLine(this.transform.position, this.path[x]);
                     else Gizmos.DrawLine(this.path[x - 1], this.path[x]);
