@@ -128,7 +128,7 @@ namespace Algo_1
                         continue;
                     }
 
-                    int tentativeGCost = currentNode.GetG() + this.ComputeHDistance(currentNode, neighborNode);
+                    int tentativeGCost = currentNode.GetG() + this.ComputeHDistance(currentNode, neighborNode) + neighborNode.GetMovementPenalty();
 
                     if (tentativeGCost < neighborNode.GetG())
                     {

@@ -18,10 +18,13 @@ namespace Algo_1
         public LayerMask unwalkableMask;
         public Vector2 gridWorldSize;
         public float nodeRadius;
+        public TerrainType[] walkableRegions;
 
         private int width, height;
         private float nodeDiameter;
         private PathNode[,] nodes;
+        private LayerMask walkableMask;
+        private Dictionary<int, int> walkableRegionDictionaary = new Dictionary<int, int>();
 
         private void Awake()
         {
@@ -29,7 +32,8 @@ namespace Algo_1
             this.width = Mathf.RoundToInt(this.gridWorldSize.x / this.nodeDiameter);
             this.height = Mathf.RoundToInt(this.gridWorldSize.y / this.nodeDiameter);
 
-            this.InstantiateNodes();
+            this.InitializeWalkableRegionDictionary();
+            this.InitializeNodes();
         }
 
         private void OnDrawGizmos()
@@ -49,7 +53,7 @@ namespace Algo_1
         /**
          * Instantiate the nodes
          */
-        private void InstantiateNodes()
+        private void InitializeNodes()
         {
             this.nodes = new PathNode[this.width, this.height];
             Vector3 worldBottomLeftPos =
@@ -64,8 +68,32 @@ namespace Algo_1
                         worldBottomLeftPos + Vector3.right * (x * this.nodeDiameter + this.nodeRadius)
                         + Vector3.forward * (y * this.nodeDiameter + nodeRadius);
                     bool isWalkable = !(Physics.CheckSphere(worldPosition, this.nodeRadius, this.unwalkableMask));
-                    this.nodes[x, y] = new PathNode(worldPosition, x, y, this, isWalkable);
+                    int movementPenalty = 0;
+                    
+                    if (isWalkable)
+                    {
+                        Ray ray = new Ray(worldPosition + Vector3.up * 50, Vector3.down);
+
+                        if (Physics.Raycast(ray, out RaycastHit hit, 100, this.walkableMask))
+                        {
+                            this.walkableRegionDictionaary.TryGetValue(hit.collider.gameObject.layer, out movementPenalty);
+                        }
+                    }
+
+                    this.nodes[x, y] = new PathNode(worldPosition, x, y, movementPenalty, isWalkable);
                 }
+            }
+        }
+
+        /**
+         * Initialize walkable region dictionary
+         */
+        private void InitializeWalkableRegionDictionary()
+        {
+            foreach (TerrainType walkableRegion in this.walkableRegions)
+            {
+                this.walkableMask.value += walkableRegion.terrainMask.value;
+                this.walkableRegionDictionaary.Add((int)Mathf.Log(walkableRegion.terrainMask.value, 2), walkableRegion.terrainPenalty);
             }
         }
 
@@ -140,6 +168,13 @@ namespace Algo_1
         public int GetHeight()
         {
             return this.height;
+        }
+
+        [Serializable]
+        public class TerrainType
+        {
+            public LayerMask terrainMask;
+            public int terrainPenalty;
         }
     }
 }

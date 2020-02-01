@@ -23,15 +23,15 @@ namespace Algo_1
         private int x;
         private int y;
         private Vector3 worldPosition;
-        private Grid grid;
+        private int movementPenalty;
         private bool isWalkable;
 
-        public PathNode(Vector3 worldPosition, int x, int y, Grid grid, bool isWalkable = true)
+        public PathNode(Vector3 worldPosition, int x, int y, int movementPenalty, bool isWalkable = true)
         {
             this.worldPosition = worldPosition;
             this.x = x;
             this.y = y;
-            this.grid = grid;
+            this.movementPenalty = movementPenalty;
             this.isWalkable = isWalkable;
         }
 
@@ -89,6 +89,14 @@ namespace Algo_1
         public Vector3 GetWorldPosition()
         {
             return this.worldPosition;
+        }
+
+        /**
+         * Return node's movement penalty
+         */
+        public int GetMovementPenalty()
+        {
+            return this.movementPenalty;
         }
 
         /**
